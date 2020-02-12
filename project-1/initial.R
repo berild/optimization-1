@@ -5,11 +5,13 @@ init_arm <- function(len,angle){
   return(list(polar = arm_polar,cart = arm_cart))
 }
 
+
+
 point_arm <- function(arm){
   x = y = rep(0,nrow(arm)+1)
   for (i in seq(nrow(arm))){
-    x[i+1] = cos(arm$angle[i])*arm$len[i] + x[i]
-    y[i+1] = sin(arm$angle[i])*arm$len[i] + y[i]
+    x[i+1] = cos(sum(arm$angle[1:i]))*arm$len[i] + x[i]
+    y[i+1] = sin(sum(arm$angle[1:i]))*arm$len[i] + y[i]
   }
   return(data.frame(x = x, y = y))
 }
@@ -22,13 +24,14 @@ find_inner_radius <-function(len){
   }
 }
 
-plot_arm <- function(arm){
+plot_arm <- function(arm,point){
   require(ggplot2)
   max_radius = sum(arm$polar$len)
   min_radius = find_inner_radius(arm$polar$len)
   circ = circleFun(inner_radius = min_radius, radius = max_radius)
   arm_fig <- ggplot() + 
-    geom_line(data = arm$cart, aes(x=x,y=y),color = "firebrick",size = 1) + 
+    geom_point(data = data.frame(x = point[1],y=point[2]), aes(x=x,y=y),size = 5, shape = 18,color = "dodgerblue") + 
+    geom_path(data = arm$cart, aes(x=x,y=y),color = "firebrick",size = 1) + 
     geom_point(data= arm$cart, aes(x=x,y=y),color = "firebrick",size = 3) +
     geom_line(data = circ$out_up, aes(x=x,y=y)) + 
     geom_line(data = circ$in_up, aes(x=x,y=y)) + 
@@ -41,7 +44,7 @@ plot_arm <- function(arm){
   return(arm_fig)
 }
 
-circleFun <- function(center=c(0,0), inner_radius = 0, radius=1, npoints=500, start=0, end=2){
+circleFun <- function(center=c(0,0), inner_radius = 0, radius=1, npoints=200, start=0, end=2){
   tt1 <- seq(start*pi, end/2*pi, length.out=npoints)
   tt2 <- seq(end/2*pi, end*pi, length.out=npoints)
   out_up <- data.frame(
@@ -60,18 +63,30 @@ circleFun <- function(center=c(0,0), inner_radius = 0, radius=1, npoints=500, st
     x = center[1] + inner_radius * cos(tt2),
     y = center[2] + inner_radius * sin(tt2)
   )
-  fill_up <- data.frame(x = out_up$x,
-                        ymax = out_up$y,
-                        ymin = ifelse((out_up$x>in_up$x[1]) | (out_up$x<in_up$x[npoints]),0,sin(acos(out_up$x/inner_radius))*inner_radius))
-  fill_low <- data.frame(x = out_low$x,
-                         ymin = out_low$y,
-                         ymax = ifelse((out_low$x<in_low$x[1]) | (out_low$x>in_low$x[npoints]),0,sin(acos(out_low$x/inner_radius)+pi)*inner_radius))
+  x_up = c(out_up$x[out_up$x>in_up$x[1]], in_up$x ,out_up$x[out_up$x<in_up$x[npoints]])
+  x_low = c(out_low$x[out_low$x<in_low$x[1]], in_low$x ,out_low$x[out_low$x>in_low$x[npoints]])
+  suppressWarnings({
+    fill_up <- data.frame(x = x_up,
+                          ymax = sin(acos(x_up/radius))*radius,
+                          ymin = ifelse((x_up<in_up$x[1]) & (x_up>in_up$x[npoints]), sin(acos(x_up/inner_radius))*inner_radius, 0))
+    fill_low <- data.frame(x = x_low,
+                           ymax = ifelse((x_low>in_low$x[1]) & (x_low<in_low$x[npoints]), sin(acos(x_low/inner_radius)+pi)*inner_radius, 0),
+                           ymin = sin(acos(x_low/radius)+pi)*radius)
+  }) 
   return(list(out_up = out_up, out_low = out_low, in_up = in_up, in_low = in_low, fill_up=fill_up,fill_low=fill_low))
 }
 
 arm_optim <- function(init,p){
-  
+
 }
 
-arm = init_arm(c(2,4,1),c(pi/4,pi/6,pi/10))
-plot_arm(arm)
+mag <- function(x){
+  sqrt(sum(x^2))  
+}
+
+arm = init_arm(c(2,5,1),c(pi/4,pi/6,pi/10))
+
+point = c(3,-1)
+arm = BFGS(arm=data.frame(len = c(2,5,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+arm_point = point_arm(arm)
+plot_arm(list(polar=arm,cart=arm_point),point = point)
