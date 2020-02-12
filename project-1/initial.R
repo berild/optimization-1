@@ -18,7 +18,7 @@ point_arm <- function(arm){
 
 find_inner_radius <-function(len){
   if (max(len) > sum(len[-which.max(len)])){
-    return(max(len) > sum(len[-which.max(len)]))
+    return(max(len) - sum(len[-which.max(len)]))
   }else{
     return(0)
   }
