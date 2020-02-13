@@ -26,13 +26,15 @@ find_inner_radius <-function(len){
 
 plot_arm <- function(arm,point){
   require(ggplot2)
-  max_radius = sum(arm$polar$len)
-  min_radius = find_inner_radius(arm$polar$len)
+  max_radius = sum(arm$len)
+  min_radius = find_inner_radius(arm$len)
   circ = circleFun(inner_radius = min_radius, radius = max_radius)
+  arm_point=point_arm(arm)
   arm_fig <- ggplot() + 
+    geom_path(data = arm_point, aes(x=x,y=y),color = "firebrick",size = 1) + 
+    geom_point(data = arm_point[nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 5,shape=15) + 
+    geom_point(data= arm_point[-nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 3) +
     geom_point(data = data.frame(x = point[1],y=point[2]), aes(x=x,y=y),size = 5, shape = 18,color = "dodgerblue") + 
-    geom_path(data = arm$cart, aes(x=x,y=y),color = "firebrick",size = 1) + 
-    geom_point(data= arm$cart, aes(x=x,y=y),color = "firebrick",size = 3) +
     geom_line(data = circ$out_up, aes(x=x,y=y)) + 
     geom_line(data = circ$in_up, aes(x=x,y=y)) + 
     geom_line(data = circ$out_low, aes(x=x,y=y)) + 
@@ -76,17 +78,16 @@ circleFun <- function(center=c(0,0), inner_radius = 0, radius=1, npoints=200, st
   return(list(out_up = out_up, out_low = out_low, in_up = in_up, in_low = in_low, fill_up=fill_up,fill_low=fill_low))
 }
 
-arm_optim <- function(init,p){
-
-}
 
 mag <- function(x){
   sqrt(sum(x^2))  
 }
 
-arm = init_arm(c(2,5,1),c(pi/4,pi/6,pi/10))
+point = c(1,1)
+arm = BFGS(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(arm,point = point)
 
-point = c(3,-1)
-arm = BFGS(arm=data.frame(len = c(2,5,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
-arm_point = point_arm(arm)
-plot_arm(list(polar=arm,cart=arm_point),point = point)
+
+
+
+
