@@ -1,4 +1,10 @@
 library(ggplot2)
+# gradient descent
+# conjugate gradient
+# newtons method
+# bfgs
+# nelder-mead
+
 init_arm <- function(len,angle){
   arm_polar = data.frame(len = len, angle = angle)
   arm_cart = point_arm(arm_polar)
@@ -24,25 +30,48 @@ find_inner_radius <-function(len){
   }
 }
 
+create_arm_tip <- function(arm_cart,arm_polar){
+  tot_angle = sum(arm_polar$angle)
+  tot_len = sum(arm_polar$len)
+  angles = c(tot_angle-pi/2,tot_angle + pi/2)
+  seg = c(tot_len/24,tot_len/24)
+  n = nrow(arm_cart)
+  res = data.frame(
+    x1 = c(arm_cart$x[n] - seg[1]/2*cos(tot_angle), seg[2]*cos(angles[1]) + arm_cart$x[n] - seg[1]/2*cos(tot_angle),  seg[1]*cos(tot_angle)+ seg[2]*cos(angles[1]) + arm_cart$x[n] - seg[1]/2*cos(tot_angle)),
+    x2 = c(arm_cart$x[n] - seg[1]/2*cos(tot_angle), seg[2]*cos(angles[2]) + arm_cart$x[n] - seg[1]/2*cos(tot_angle),  seg[1]*cos(tot_angle)+ seg[2]*cos(angles[2]) + arm_cart$x[n] - seg[1]/2*cos(tot_angle)),
+    y1 = c(arm_cart$y[n] - seg[1]/2*sin(tot_angle), seg[2]*sin(angles[1]) + arm_cart$y[n] - seg[1]/2*sin(tot_angle),  seg[1]*sin(tot_angle)+ seg[2]*sin(angles[1]) + arm_cart$y[n] - seg[1]/2*sin(tot_angle)),
+    y2 = c(arm_cart$y[n] - seg[1]/2*sin(tot_angle), seg[2]*sin(angles[2]) + arm_cart$y[n] - seg[1]/2*sin(tot_angle),  seg[1]*sin(tot_angle)+ seg[2]*sin(angles[2]) + arm_cart$y[n] - seg[1]/2*sin(tot_angle))
+  )
+  return(res)
+}
+
 plot_arm <- function(arm,point){
   require(ggplot2)
   max_radius = sum(arm$len)
   min_radius = find_inner_radius(arm$len)
   circ = circleFun(inner_radius = min_radius, radius = max_radius)
-  arm_point=point_arm(arm)
+  arm_point = point_arm(arm)
+  arm_text = data.frame(label = seq(nrow(arm_point)-1),x = arm_point$x[-nrow(arm_point)],y = arm_point$y[-nrow(arm_point)])
+  arm_tip = create_arm_tip(arm_point,arm)
+  arm_point$x[nrow(arm_point)] = arm_tip$x1[1]
+  arm_point$y[nrow(arm_point)] = arm_tip$y1[1]
   arm_fig <- ggplot() + 
-    geom_path(data = arm_point, aes(x=x,y=y),color = "firebrick",size = 1) + 
-    geom_point(data = arm_point[nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 5,shape=15) + 
-    geom_point(data= arm_point[-nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 3) +
-    geom_point(data = data.frame(x = point[1],y=point[2]), aes(x=x,y=y),size = 5, shape = 18,color = "dodgerblue") + 
     geom_line(data = circ$out_up, aes(x=x,y=y)) + 
     geom_line(data = circ$in_up, aes(x=x,y=y)) + 
     geom_line(data = circ$out_low, aes(x=x,y=y)) + 
     geom_line(data = circ$in_low, aes(x=x,y=y)) + 
     geom_ribbon(data = circ$fill_up, aes(x=x,ymin=ymin,ymax=ymax),alpha = 0.2) +
     geom_ribbon(data = circ$fill_low, aes(x=x,ymin=ymin,ymax=ymax),alpha = 0.2) + 
+    geom_path(data = arm_point, aes(x=x,y=y),color = "firebrick",size = 1) + 
+    #geom_point(data = arm_point[nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 5,shape = 15) + 
+    geom_path(data = arm_tip, aes(x=x1,y=y1), color = "firebrick",size = 1) + 
+    geom_path(data = arm_tip, aes(x=x2,y=y2), color = "firebrick",size = 1) + 
+    geom_point(data= arm_point[-nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 6,shape = 16) +
+    geom_point(data = data.frame(x = point[1],y=point[2]), aes(x=x,y=y),size = 5, shape = 18,color = "dodgerblue") + 
+    geom_text(data = arm_text, aes(x = x, y = y , label = label),color = "white",size=5) + 
     labs (x = "", y = "") + 
-    theme_bw()
+    theme_classic() + 
+    theme(axis.line = element_blank())
   return(arm_fig)
 }
 
@@ -83,11 +112,44 @@ mag <- function(x){
   sqrt(sum(x^2))  
 }
 
+point = c(3,2)
+arm = gradient_descent(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)), tol = 0.001, point=point)
+plot_arm(arm,point = point)
+arm = BFGS(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(arm,point = point)
+
 point = c(1,1)
+arm = gradient_descent(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(arm,point = point)
 arm = BFGS(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
 plot_arm(arm,point = point)
 
+point = c(3,2)
+arm = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
+plot_arm(arm,point = point)
+arm = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
+plot_arm(arm,point = point)
 
+point = c(0,0)
+arm = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(arm,point = point)
+arm = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(arm,point = point)
 
+generate_problem <- function(n){
+  len = sample(seq(15),n,replace = T)
+  angle = runif(n,min = 0, max = 2*pi)
+  max_radius = sum(len)
+  min_radius = find_inner_radius(len)
+  tmp_r = runif(1,min=min_radius, max = max_radius)
+  tmp_angle = runif(1,min = 0, max = 2*pi)
+  point = c (tmp_r*cos(tmp_angle),tmp_r*sin(tmp_angle))
+  return(list(point = point, arm = data.frame(angle = angle, len = len)))
+}
 
-
+run <- function(n){
+prob = generate_problem(n)
+arm = BFGS(arm = prob$arm,tol = 0.001, point = prob$point)
+return(plot_arm(arm,point = prob$point))
+}
+run(3)
