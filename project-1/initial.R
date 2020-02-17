@@ -113,28 +113,36 @@ mag <- function(x){
 }
 
 point = c(3,2)
-arm = gradient_descent(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)), tol = 0.001, point=point)
-plot_arm(arm,point = point)
-arm = BFGS(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
-plot_arm(arm,point = point)
+res = fletcher_reeves(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point=point)
+plot_arm(res$arm,point = point)
+res = gradient_descent(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)), tol = 0.001, point=point)
+plot_arm(res$arm,point = point)
+res = BFGS(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
 
 point = c(1,1)
-arm = gradient_descent(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
-plot_arm(arm,point = point)
-arm = BFGS(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
-plot_arm(arm,point = point)
+res = fletcher_reeves(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
+res = gradient_descent(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
+res = BFGS(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
 
 point = c(3,2)
-arm = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
-plot_arm(arm,point = point)
-arm = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
-plot_arm(arm,point = point)
+res = fletcher_reeves(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
+res = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
+res = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
 
 point = c(0,0)
-arm = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
-plot_arm(arm,point = point)
-arm = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
-plot_arm(arm,point = point)
+res = fletcher_reeves(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
+res = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
+res = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(res$arm,point = point)
 
 generate_problem <- function(n){
   len = sample(seq(15),n,replace = T)
@@ -148,8 +156,9 @@ generate_problem <- function(n){
 }
 
 run <- function(n){
-prob = generate_problem(n)
-arm = BFGS(arm = prob$arm,tol = 0.001, point = prob$point)
-return(plot_arm(arm,point = prob$point))
+  prob = generate_problem(n)
+  res = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
+  return(plot_arm(res$arm,point = prob$point))
 }
+
 run(3)

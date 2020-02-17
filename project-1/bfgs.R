@@ -9,6 +9,7 @@ f <- function(angle,len,point){
 
 
 BFGS <- function(arm,tol,point,beta = 0.5){
+  start_time = Sys.time()
   # inital point x_0, convergence tolerance  epsilon > 0 , inverse hessian approximation H_0
   H_k = beta*diag(nrow(arm))
   k = 1
@@ -19,6 +20,9 @@ BFGS <- function(arm,tol,point,beta = 0.5){
     p_k = - H_k%*%grad_f
     # line search for a_k
     a_k = wolfe_line_search(arm,point,p_k)
+    if (a_k == 322){
+      break
+    }
     s_k = a_k*p_k
     new_arm = arm$angle + s_k
     new_grad_f = calc_grad(new_arm,arm$len,point)
@@ -34,7 +38,12 @@ BFGS <- function(arm,tol,point,beta = 0.5){
       H_k = as.numeric((t(y_k)%*%s_k)/(t(y_k)%*%y_k))*diag(length(y_k))
     }
   }
-  return(arm)
+  end_time = Sys.time()
+  return(list(arm = arm, 
+              k = k, 
+              runtime = start_time - end_time,
+              grad = mag(grad_f),
+              f = f(arm$angle,arm$len,point)))
 }
 
 wolfe_line_search <- function(arm,point,p_k,c_1=1e-4,c_2=0.9,steps = 20){
@@ -62,7 +71,8 @@ wolfe_line_search <- function(arm,point,p_k,c_1=1e-4,c_2=0.9,steps = 20){
 }
 
 zoom <- function(arm,point,p_k,phi_0,d_phi_0,a_l,a_h,c_1 = 1e-4,c_2=0.9){
-  while (T){
+  max_iterations = 100
+  while (max_iterations>0){
     a_j = (a_l + a_h)/2
     phi_j = f(arm$angle + a_j*p_k,arm$len,point)
     phi_l = f(arm$angle + a_l*p_k,arm$len,point)
@@ -79,7 +89,9 @@ zoom <- function(arm,point,p_k,phi_0,d_phi_0,a_l,a_h,c_1 = 1e-4,c_2=0.9){
       }
       a_l = a_j
     }
+    max_iterations = max_iterations - 1
   }
+  return(322)
 }
 
 phi_deriv <- function(arm,point,p_k,a_k){
