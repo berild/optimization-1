@@ -1,9 +1,8 @@
 library(ggplot2)
-# gradient descent
-# conjugate gradient
-# newtons method
-# bfgs
-# nelder-mead
+source("./project-1/general_functions.R")
+source("./project-1/gd.R")
+source("./project-1/bfgs.R")
+source("./project-1/f-r.R")
 
 init_arm <- function(len,angle){
   arm_polar = data.frame(len = len, angle = angle)
@@ -108,10 +107,6 @@ circleFun <- function(center=c(0,0), inner_radius = 0, radius=1, npoints=200, st
 }
 
 
-mag <- function(x){
-  sqrt(sum(x^2))  
-}
-
 point = c(3,2)
 res = fletcher_reeves(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point=point)
 plot_arm(res$arm,point = point)
@@ -149,16 +144,49 @@ generate_problem <- function(n){
   angle = runif(n,min = 0, max = 2*pi)
   max_radius = sum(len)
   min_radius = find_inner_radius(len)
-  tmp_r = runif(1,min=min_radius, max = max_radius)
+  tmp_r = runif(1,min=0, max = max_radius*1.2)
   tmp_angle = runif(1,min = 0, max = 2*pi)
   point = c (tmp_r*cos(tmp_angle),tmp_r*sin(tmp_angle))
   return(list(point = point, arm = data.frame(angle = angle, len = len)))
 }
 
-run <- function(n){
-  prob = generate_problem(n)
-  res = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
-  return(plot_arm(res$arm,point = prob$point))
+
+test_conv <- function(grad_f, eval_f,tol_1 = 1e-3, tol_2 = 1e-3){
+  if ((grad_f < tol_1) & (eval_f < tol_2)){
+    return(1)
+  }else if (grad_f < tol_1){
+    return(2)
+  }else{
+    return(0)
+  }
 }
 
-run(3)
+run <- function(){
+  n_arms = c(3,5,7,10)
+  n_iter = 1000
+  res_bfgs = res_fr = res_gd = data.frame(
+    steps = rep(NA,n_iter*length(n_arms)), 
+    runtime = rep(NA,n_iter*length(n_arms)),
+    conv = rep(NA,n_iter*length(n_arms)),
+    n = rep(NA,n_iter*length(n_arms))
+    )
+  k = 1
+  pb <- txtProgressBar(min = 1, max = n_iter*length(n_arms), style = 3)
+  for (n in n_arms){
+    for (i in seq(n_iter)){
+      setTxtProgressBar(pb, k)
+      prob = generate_problem(n)
+      tmp_bfgs = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
+      res_bfgs[k,] = c(tmp_bfgs$k,tmp_bfgs$runtime,test_conv(tmp_bfgs$grad,tmp_bfgs$f),n)
+      tmp_fr = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
+      res_fr[k,] = c(tmp_fr$k,tmp_fr$runtime,test_conv(tmp_fr$grad,tmp_fr$f),n)
+      tmp_gd = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
+      res_gd[k,] = c(tmp_gd$k,tmp_gd$runtime,test_conv(tmp_gd$grad,tmp_gd$f),n)
+      k = k + 1
+    }
+  }
+  return(list(res_bfgs = res_bfgs, res_gd = res_gd, res_fr = res_fr))
+}
+
+
+res = run()

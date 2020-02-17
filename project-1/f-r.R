@@ -24,28 +24,3 @@ fletcher_reeves <- function(arm,tol,point){
               grad = mag(grad_f),
               f = f(arm$angle,arm$len,point)))
 }
-
-
-calc_grad <- function(angle,len,point){
-  x = rep(0,length(angle))
-  y = rep(0,length(angle))
-  grad_f = rep(0,length(angle))
-  for (k in seq(length(angle))){
-    for (i in seq(k,length(angle))){
-      x[k] = cos(sum(angle[1:i]))*len[i] + x[k]
-      y[k] = sin(sum(angle[1:i]))*len[i] + y[k]
-    }
-    grad_f[k] = -y[k]*(x[1]-point[1]) + x[k]*(y[1]-point[2])
-  }
-  return(grad_f)
-}
-
-
-f <- function(angle,len,point){
-  arm_point = c(0,0)
-  for (i in seq(length(angle))){
-    arm_point = c(len[i]*cos(sum(angle[1:i])),len[i]*sin(sum(angle[1:i]))) + arm_point
-  }
-  return(1/2*sum((arm_point-point)^2))
-}
-
