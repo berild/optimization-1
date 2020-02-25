@@ -32,7 +32,7 @@ BFGS <- function(arm,tol,point,beta = 0.5){
   end_time = Sys.time()
   return(list(arm = arm, 
               k = k, 
-              runtime = start_time - end_time,
+              runtime = as.numeric(end_time - start_time,units="secs"),
               grad = mag(grad_f),
               f = f(arm$angle,arm$len,point)))
 }

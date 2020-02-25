@@ -1,4 +1,5 @@
 library(ggplot2)
+library(parallel)
 source("./project-1/general_functions.R")
 source("./project-1/gd.R")
 source("./project-1/bfgs.R")
@@ -74,6 +75,56 @@ plot_arm <- function(arm,point){
   return(arm_fig)
 }
 
+plot_arm_joint <- function(arm1,arm2,arm3,point){
+  require(ggplot2)
+  max_radius = sum(arm1$len)
+  min_radius = find_inner_radius(arm1$len)
+  circ = circleFun(inner_radius = min_radius, radius = max_radius)
+  arm_point1 = point_arm(arm1)
+  arm_point2 = point_arm(arm2)
+  arm_point3 = point_arm(arm3)
+  arm_text1 = data.frame(label = seq(nrow(arm_point1)-1),x = arm_point1$x[-nrow(arm_point1)],y = arm_point1$y[-nrow(arm_point1)])
+  arm_text2 = data.frame(label = seq(nrow(arm_point2)-1),x = arm_point2$x[-nrow(arm_point2)],y = arm_point2$y[-nrow(arm_point2)])
+  arm_text3 = data.frame(label = seq(nrow(arm_point3)-1),x = arm_point3$x[-nrow(arm_point3)],y = arm_point3$y[-nrow(arm_point3)])
+  arm_tip1 = create_arm_tip(arm_point1,arm1)
+  arm_tip2 = create_arm_tip(arm_point2,arm2)
+  arm_tip3 = create_arm_tip(arm_point3,arm3)
+  arm_point1$x[nrow(arm_point1)] = arm_tip1$x1[1]
+  arm_point1$y[nrow(arm_point1)] = arm_tip1$y1[1]
+  arm_point2$x[nrow(arm_point2)] = arm_tip2$x1[1]
+  arm_point2$y[nrow(arm_point2)] = arm_tip2$y1[1]
+  arm_point3$x[nrow(arm_point3)] = arm_tip3$x1[1]
+  arm_point3$y[nrow(arm_point3)] = arm_tip3$y1[1]
+  arm_fig <- ggplot() + 
+    geom_line(data = circ$out_up, aes(x=x,y=y)) + 
+    geom_line(data = circ$in_up, aes(x=x,y=y)) + 
+    geom_line(data = circ$out_low, aes(x=x,y=y)) + 
+    geom_line(data = circ$in_low, aes(x=x,y=y)) + 
+    geom_ribbon(data = circ$fill_up, aes(x=x,ymin=ymin,ymax=ymax),alpha = 0.2) +
+    geom_ribbon(data = circ$fill_low, aes(x=x,ymin=ymin,ymax=ymax),alpha = 0.2) + 
+    geom_path(data = arm_point1, aes(x=x,y=y,color = "GD"),size = 1) + 
+    geom_path(data = arm_point2, aes(x=x,y=y,color = "F-R"),size = 1) + 
+    geom_path(data = arm_point3, aes(x=x,y=y,color = "BFGS"),size = 1) + 
+    #geom_point(data = arm_point[nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 5,shape = 15) + 
+    geom_path(data = arm_tip1, aes(x=x1,y=y1,color = "GD"),size = 1) + 
+    geom_path(data = arm_tip2, aes(x=x1,y=y1,color = "F-R"),size = 1) + 
+    geom_path(data = arm_tip3, aes(x=x1,y=y1,color = "BFGS"),size = 1) + 
+    geom_path(data = arm_tip1, aes(x=x2,y=y2,color = "GD"),size = 1) + 
+    geom_path(data = arm_tip2, aes(x=x2,y=y2,color = "F-R"),size = 1) + 
+    geom_path(data = arm_tip3, aes(x=x2,y=y2,color = "BFGS"),size = 1) + 
+    geom_point(data= arm_point1[-nrow(arm_point1),], aes(x=x,y=y,color = "GD"),size = 6,shape = 16) +
+    geom_point(data= arm_point2[-nrow(arm_point2),], aes(x=x,y=y,color = "F-R"),size = 6,shape = 16) +
+    geom_point(data= arm_point3[-nrow(arm_point3),], aes(x=x,y=y,color = "BFGS"),size = 6,shape = 16) +
+    geom_point(data = data.frame(x = point[1],y=point[2]), aes(x=x,y=y),size = 5, shape = 18,color = "hotpink") + 
+    geom_text(data = arm_text1, aes(x = x, y = y , label = label),color = "white",size=5) + 
+    geom_text(data = arm_text2, aes(x = x, y = y , label = label),color = "white",size=5) + 
+    geom_text(data = arm_text3, aes(x = x, y = y , label = label),color = "white",size=5) + 
+    labs (x = "", y = "",color="") + 
+    theme_classic() + 
+    theme(axis.line = element_blank())
+  return(arm_fig)
+}
+
 circleFun <- function(center=c(0,0), inner_radius = 0, radius=1, npoints=200, start=0, end=2){
   tt1 <- seq(start*pi, end/2*pi, length.out=npoints)
   tt2 <- seq(end/2*pi, end*pi, length.out=npoints)
@@ -106,38 +157,58 @@ circleFun <- function(center=c(0,0), inner_radius = 0, radius=1, npoints=200, st
   return(list(out_up = out_up, out_low = out_low, in_up = in_up, in_low = in_low, fill_up=fill_up,fill_low=fill_low))
 }
 
+point = c(-7,0)
+res1 = fletcher_reeves(arm=data.frame(len = c(4,1,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point=point)
+plot_arm(res1$arm,point = point)
+res2 = gradient_descent(arm=data.frame(len = c(4,1,1), angle=c(pi/4,pi/6,pi/10)), tol = 0.001, point=point)
+plot_arm(res2$arm,point = point)
+res3 = BFGS(arm=data.frame(len = c(4,1,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(res3$arm,point = point)
+plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
 
-point = c(3,2)
-res = fletcher_reeves(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point=point)
-plot_arm(res$arm,point = point)
-res = gradient_descent(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)), tol = 0.001, point=point)
-plot_arm(res$arm,point = point)
-res = BFGS(arm=data.frame(len = c(3,2,2), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
+point = c(5,3)
+res1 = fletcher_reeves(arm=data.frame(len = c(5,2,1), angle=c(pi/2,pi/6,pi/10)),tol = 0.001, point=point)
+plot_arm(res1$arm,point = point)
+res2 = gradient_descent(arm=data.frame(len = c(5,2,1), angle=c(pi/2,pi/6,pi/10)), tol = 0.001, point=point)
+plot_arm(res2$arm,point = point)
+res3 = BFGS(arm=data.frame(len = c(5,2,1), angle=c(pi/2,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(res3$arm,point = point)
+joint_arm <- plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
+joint_arm
+ggsave(filename = "joint_arm1.pdf", plot = joint_arm, device = NULL, path = "./figures/",
+       scale = 1, width = 5, height = 5, units = "in", dpi=5000)
+
 
 point = c(1,1)
-res = fletcher_reeves(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
-res = gradient_descent(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
-res = BFGS(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
+res1 = fletcher_reeves(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(res1$arm,point = point)
+res2 = gradient_descent(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+plot_arm(res2$arm,point = point)
+res3 = BFGS(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
+arm_fig <- plot_arm(res3$arm,point = point)
+arm_fig
+ggsave(filename = "arm1.pdf", plot = arm_fig, device = NULL, path = "./figures/",
+       scale = 1, width = 5, height = 5, units = "in", dpi=5000)
+
+plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
 
 point = c(3,2)
-res = fletcher_reeves(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
-res = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
-res = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
+res1 = fletcher_reeves(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
+plot_arm(res1$arm,point = point)
+res2 = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
+plot_arm(res2$arm,point = point)
+res3 = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
+plot_arm(res3$arm,point = point)
+plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
 
 point = c(0,0)
-res = fletcher_reeves(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
-res = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
-res = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
-plot_arm(res$arm,point = point)
+res1 = fletcher_reeves(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(res1$arm,point = point)
+res2 = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(res2$arm,point = point)
+res3 = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(res3$arm,point = point)
+plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
 
 generate_problem <- function(n){
   len = sample(seq(15),n,replace = T)
@@ -162,31 +233,83 @@ test_conv <- function(grad_f, eval_f,tol_1 = 1e-3, tol_2 = 1e-3){
 }
 
 run <- function(){
-  n_arms = c(3,5,7,10)
+  n_arms = c(3,5,7,9)
   n_iter = 1000
   res_bfgs = res_fr = res_gd = data.frame(
     steps = rep(NA,n_iter*length(n_arms)), 
     runtime = rep(NA,n_iter*length(n_arms)),
     conv = rep(NA,n_iter*length(n_arms)),
-    n = rep(NA,n_iter*length(n_arms))
+    n = rep(NA,n_iter*length(n_arms)),
+    grad_f = rep(NA,n_iter*length(n_arms)),
+    f = rep(NA,n_iter*length(n_arms))
     )
   k = 1
   pb <- txtProgressBar(min = 1, max = n_iter*length(n_arms), style = 3)
   for (n in n_arms){
-    for (i in seq(n_iter)){
-      setTxtProgressBar(pb, k)
+    optim_list <- mclapply(seq(n_iter),function(x){
       prob = generate_problem(n)
-      tmp_bfgs = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
-      res_bfgs[k,] = c(tmp_bfgs$k,tmp_bfgs$runtime,test_conv(tmp_bfgs$grad,tmp_bfgs$f),n)
+      tmp_bfgs = BFGS(arm = prob$arm,tol = 0.001, point = prob$point)
+      res_bfgs = c(tmp_bfgs$k,tmp_bfgs$runtime,test_conv(tmp_bfgs$grad,tmp_bfgs$f),n,tmp_bfgs$grad,tmp_bfgs$f)
       tmp_fr = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
-      res_fr[k,] = c(tmp_fr$k,tmp_fr$runtime,test_conv(tmp_fr$grad,tmp_fr$f),n)
-      tmp_gd = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
-      res_gd[k,] = c(tmp_gd$k,tmp_gd$runtime,test_conv(tmp_gd$grad,tmp_gd$f),n)
-      k = k + 1
+      res_fr = c(tmp_fr$k,tmp_fr$runtime,test_conv(tmp_fr$grad,tmp_fr$f),n,tmp_fr$grad,tmp_fr$f)
+      tmp_gd = gradient_descent(arm = prob$arm,tol = 0.001, point = prob$point)
+      res_gd = c(tmp_gd$k,tmp_gd$runtime,test_conv(tmp_gd$grad,tmp_gd$f),n,tmp_gd$grad,tmp_gd$f)
+      return(list(res_bfgs = res_bfgs, res_gd = res_gd, res_fr = res_fr))
+    },mc.cores = detectCores())
+    for (ele in optim_list){
+      setTxtProgressBar(pb, k)
+      res_bfgs[k,] = ele$res_bfgs
+      res_fr[k,] = ele$res_fr
+      res_gd[k,] = ele$res_fr
+      k = k+1
     }
   }
   return(list(res_bfgs = res_bfgs, res_gd = res_gd, res_fr = res_fr))
 }
+# for (i in seq(n_iter)){
+#   setTxtProgressBar(pb, k)
+#   prob = generate_problem(n)
+#   tmp_bfgs = BFGS(arm = prob$arm,tol = 0.001, point = prob$point)
+#   res_bfgs[k,] = c(tmp_bfgs$k,tmp_bfgs$runtime,test_conv(tmp_bfgs$grad,tmp_bfgs$f),n,tmp_bfgs$grad,tmp_bfgs$f)
+#   tmp_fr = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
+#   res_fr[k,] = c(tmp_fr$k,tmp_fr$runtime,test_conv(tmp_fr$grad,tmp_fr$f),n,tmp_fr$grad,tmp_fr$f)
+#   tmp_gd = gradient_descent(arm = prob$arm,tol = 0.001, point = prob$point)
+#   res_gd[k,] = c(tmp_gd$k,tmp_gd$runtime,test_conv(tmp_gd$grad,tmp_gd$f),n,tmp_gd$grad,tmp_gd$f)
+#   k = k + 1
+# }
 
 
 res = run()
+get_stats <- function(res,tot_it){
+  stats = data.frame(
+    n = as.factor(c(sapply(seq(3,9,2),function(x){rep(x,3)}))),
+    method = rep(c("GD","F-R","BFGS"),4),
+    conv = rep(NA,3*4),
+    mean_it = rep(NA,3*4),
+    sd_it = rep(NA,3*4),
+    mean_run = rep(NA,3*4),
+    sd_run = rep(NA,3*4)
+  )
+  i = 1
+  for (n in seq(3,10,2)){
+    stats$conv[i] = sum(res$res_gd$conv[res$res_gd$n==n]!=0)/tot_it
+    stats$conv[i+1] = sum(res$res_fr$conv[res$res_fr$n==n]!=0)/tot_it
+    stats$conv[i+2] = sum(res$res_bfgs$conv[res$res_bfgs$n==n]!=0)/tot_it
+    stats$mean_it[i] = mean(res$res_gd$steps[res$res_gd$n==n])
+    stats$mean_it[i+1] = mean(res$res_fr$steps[res$res_fr$n==n])
+    stats$mean_it[i+2] = mean(res$res_bfgs$steps[res$res_bfgs$n==n])
+    stats$sd_it[i] = sd(res$res_gd$steps[res$res_gd$n==n])
+    stats$sd_it[i+1] = sd(res$res_fr$steps[res$res_fr$n==n])
+    stats$sd_it[i+2] = sd(res$res_bfgs$steps[res$res_bfgs$n==n])
+    stats$mean_run[i] = mean(res$res_gd$runtime[res$res_gd$n==n])
+    stats$mean_run[i+1] = mean(res$res_fr$runtime[res$res_fr$n==n])
+    stats$mean_run[i+2] = mean(res$res_bfgs$runtime[res$res_bfgs$n==n])
+    stats$sd_run[i] = sd(res$res_gd$runtime[res$res_gd$n==n])
+    stats$sd_run[i+1] = sd(res$res_fr$runtime[res$res_fr$n==n])
+    stats$sd_run[i+2] = sd(res$res_bfgs$runtime[res$res_bfgs$n==n])
+    i = i + 3
+  }
+  return(stats)
+}
+
+
