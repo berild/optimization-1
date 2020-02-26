@@ -176,7 +176,7 @@ plot_arm(res3$arm,point = point)
 joint_arm <- plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
 joint_arm
 ggsave(filename = "joint_arm1.pdf", plot = joint_arm, device = NULL, path = "./figures/",
-       scale = 1, width = 5, height = 5, units = "in", dpi=5000)
+       scale = 1, width = 6, height = 5, units = "in", dpi=5000)
 
 
 point = c(1,1)
