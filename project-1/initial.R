@@ -313,3 +313,12 @@ get_stats <- function(res,tot_it){
 }
 
 
+
+ggplot(stats,aes(x = n)) + 
+  geom_ribbon(aes(x = n, ymin = log(it_q25), ymax = log(it_q75), group = method,fill = method, color = method),alpha = 0.2) + 
+  geom_line(aes(x = n, y = log(it_q50),group = method, color = method),size = 1)
+
+
+ggplot(stats,aes(x = n)) + 
+  geom_ribbon(aes(x = n, ymin = log(run_q25), ymax = log(run_q75), group = method,fill = method, color = method),alpha = 0.2) + 
+  geom_line(aes(x = n, y = log(run_q50),group = method, color = method),size = 1)

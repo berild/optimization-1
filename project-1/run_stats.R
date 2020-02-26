@@ -35,7 +35,7 @@ test_conv <- function(grad_f, eval_f,tol_1 = 1e-3, tol_2 = 1e-3){
 }
 
 run <- function(n_iter){
-  n_arms = c(3,5,7,9)
+  n_arms = seq(3,10)
   res_bfgs = res_fr = res_gd = data.frame(
     steps = rep(NA,n_iter*length(n_arms)), 
     runtime = rep(NA,n_iter*length(n_arms)),
@@ -69,22 +69,22 @@ run <- function(n_iter){
 }
 
 
-res = run(1000)
+res = run(10000)
 save(res, file = "./project-1/optim-runs.Rdata")
 get_stats <- function(res,tot_it){
   stats = data.frame(
-    n = as.factor(c(sapply(seq(3,9,2),function(x){rep(x,3)}))),
-    method = rep(c("GD","F-R","BFGS"),4),
-    conv = rep(NA,3*4),
-    it_q25 = rep(NA,3*4),
-    it_q50 = rep(NA,3*4),
-    it_q75 = rep(NA,3*4),
-    run_q25 = rep(NA,3*4),
-    run_q50 = rep(NA,3*4),
-    run_q75 = rep(NA,3*4)
+    n = as.factor(c(sapply(seq(3,10),function(x){rep(x,3)}))),
+    method = rep(c("GD","F-R","BFGS"),length(seq(3,10))),
+    conv = rep(NA,3*length(seq(3,10))),
+    it_q25 = rep(NA,3*length(seq(3,10))),
+    it_q50 = rep(NA,3*length(seq(3,10))),
+    it_q75 = rep(NA,3*length(seq(3,10))),
+    run_q25 = rep(NA,3*length(seq(3,10))),
+    run_q50 = rep(NA,3*length(seq(3,10))),
+    run_q75 = rep(NA,3*length(seq(3,10)))
   )
   i = 1
-  for (n in seq(3,9,2)){
+  for (n in seq(3,10)){
     stats$conv[i] = sum(res$res_gd$conv[res$res_gd$n==n]!=0)/tot_it*100
     stats$conv[i+1] = sum(res$res_fr$conv[res$res_fr$n==n]!=0)/tot_it*100
     stats$conv[i+2] = sum(res$res_bfgs$conv[res$res_bfgs$n==n]!=0)/tot_it*100
@@ -110,6 +110,6 @@ get_stats <- function(res,tot_it){
   }
   return(stats)
 }
-stats = get_stats(res,1000)
+stats = get_stats(res,10000)
 save(stats, file = "./project-1/optim-stats.Rdata")
-  
+
