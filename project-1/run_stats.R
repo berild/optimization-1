@@ -76,32 +76,40 @@ get_stats <- function(res,tot_it){
     n = as.factor(c(sapply(seq(3,9,2),function(x){rep(x,3)}))),
     method = rep(c("GD","F-R","BFGS"),4),
     conv = rep(NA,3*4),
-    mean_it = rep(NA,3*4),
-    sd_it = rep(NA,3*4),
-    mean_run = rep(NA,3*4),
-    sd_run = rep(NA,3*4)
+    it_q25 = rep(NA,3*4),
+    it_q50 = rep(NA,3*4),
+    it_q75 = rep(NA,3*4),
+    run_q25 = rep(NA,3*4),
+    run_q50 = rep(NA,3*4),
+    run_q75 = rep(NA,3*4)
   )
   i = 1
   for (n in seq(3,9,2)){
-    stats$conv[i] = sum(res$res_gd$conv[res$res_gd$n==n]!=0)/tot_it
-    stats$conv[i+1] = sum(res$res_fr$conv[res$res_fr$n==n]!=0)/tot_it
-    stats$conv[i+2] = sum(res$res_bfgs$conv[res$res_bfgs$n==n]!=0)/tot_it
-    stats$mean_it[i] = mean(res$res_gd$steps[res$res_gd$n==n])
-    stats$mean_it[i+1] = mean(res$res_fr$steps[res$res_fr$n==n])
-    stats$mean_it[i+2] = mean(res$res_bfgs$steps[res$res_bfgs$n==n])
-    stats$sd_it[i] = sd(res$res_gd$steps[res$res_gd$n==n])
-    stats$sd_it[i+1] = sd(res$res_fr$steps[res$res_fr$n==n])
-    stats$sd_it[i+2] = sd(res$res_bfgs$steps[res$res_bfgs$n==n])
-    stats$mean_run[i] = mean(res$res_gd$runtime[res$res_gd$n==n])
-    stats$mean_run[i+1] = mean(res$res_fr$runtime[res$res_fr$n==n])
-    stats$mean_run[i+2] = mean(res$res_bfgs$runtime[res$res_bfgs$n==n])
-    stats$sd_run[i] = sd(res$res_gd$runtime[res$res_gd$n==n])
-    stats$sd_run[i+1] = sd(res$res_fr$runtime[res$res_fr$n==n])
-    stats$sd_run[i+2] = sd(res$res_bfgs$runtime[res$res_bfgs$n==n])
+    stats$conv[i] = sum(res$res_gd$conv[res$res_gd$n==n]!=0)/tot_it*100
+    stats$conv[i+1] = sum(res$res_fr$conv[res$res_fr$n==n]!=0)/tot_it*100
+    stats$conv[i+2] = sum(res$res_bfgs$conv[res$res_bfgs$n==n]!=0)/tot_it*100
+    stats$it_q25[i] = quantile(res$res_gd$steps[res$res_gd$n==n],0.25)
+    stats$it_q25[i+1] = quantile(res$res_fr$steps[res$res_fr$n==n],0.25)
+    stats$it_q25[i+2] = quantile(res$res_bfgs$steps[res$res_bfgs$n==n],0.25)
+    stats$it_q50[i] = quantile(res$res_gd$steps[res$res_gd$n==n],0.50)
+    stats$it_q50[i+1] = quantile(res$res_fr$steps[res$res_fr$n==n],0.50)
+    stats$it_q50[i+2] = quantile(res$res_bfgs$steps[res$res_bfgs$n==n],0.50)
+    stats$it_q75[i] = quantile(res$res_gd$steps[res$res_gd$n==n],0.75)
+    stats$it_q75[i+1] = quantile(res$res_fr$steps[res$res_fr$n==n],0.75)
+    stats$it_q75[i+2] = quantile(res$res_bfgs$steps[res$res_bfgs$n==n],0.75)
+    stats$run_q25[i] = quantile(res$res_gd$runtime[res$res_gd$n==n],0.25)
+    stats$run_q25[i+1] = quantile(res$res_fr$runtime[res$res_fr$n==n],0.25)
+    stats$run_q25[i+2] = quantile(res$res_bfgs$runtime[res$res_bfgs$n==n],0.25)
+    stats$run_q50[i] = quantile(res$res_gd$runtime[res$res_gd$n==n],0.50)
+    stats$run_q50[i+1] = quantile(res$res_fr$runtime[res$res_fr$n==n],0.50)
+    stats$run_q50[i+2] = quantile(res$res_bfgs$runtime[res$res_bfgs$n==n],0.50)
+    stats$run_q75[i] = quantile(res$res_gd$runtime[res$res_gd$n==n],0.75)
+    stats$run_q75[i+1] = quantile(res$res_fr$runtime[res$res_fr$n==n],0.75)
+    stats$run_q75[i+2] = quantile(res$res_bfgs$runtime[res$res_bfgs$n==n],0.75)
     i = i + 3
   }
   return(stats)
 }
 stats = get_stats(res,1000)
 save(stats, file = "./project-1/optim-stats.Rdata")
-
+  
