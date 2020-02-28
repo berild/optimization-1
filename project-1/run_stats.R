@@ -1,9 +1,15 @@
+# script to run the simulation test on server
+# instead of running this the simulation is contained in the files included in the delivery
+# for all trials: optim-runs-large.Rdata   and the small version aswell
+# for statistics: optim-stats-large.Rdata   or the small version
+
 library(parallel)
 source("./project-1/general_functions.R")
 source("./project-1/gd.R")
 source("./project-1/bfgs.R")
 source("./project-1/f-r.R")
 
+# finding inner radius configuration space
 find_inner_radius <-function(len){
   if (max(len) > sum(len[-which.max(len)])){
     return(max(len) - sum(len[-which.max(len)]))
@@ -12,6 +18,8 @@ find_inner_radius <-function(len){
   }
 }
 
+
+# generate a problem at random
 generate_problem <- function(n){
   len = sample(seq(15),n,replace = T)
   angle = runif(n,min = 0, max = 2*pi)
@@ -24,6 +32,7 @@ generate_problem <- function(n){
 }
 
 
+# classifying convergence 92f1ec2d-cf8d-4cd6-82bc-bf7a1c54f9bd
 test_conv <- function(grad_f, eval_f,tol_1 = 1e-3, tol_2 = 1e-3){
   if ((grad_f < tol_1) & (eval_f < tol_2)){
     return(1)
@@ -34,6 +43,7 @@ test_conv <- function(grad_f, eval_f,tol_1 = 1e-3, tol_2 = 1e-3){
   }
 }
 
+# run simulation test
 run <- function(n_iter){
   n_arms = seq(3,10)
   res_bfgs = res_fr = res_gd = data.frame(
@@ -69,8 +79,12 @@ run <- function(n_iter){
 }
 
 
-res = run(10000)
+res = run(10000) # start simulation test
+# this is done in parallel and a long time
+# save the file
 save(res, file = "./project-1/optim-runs.Rdata")
+
+# generate statistics data.frame
 get_stats <- function(res,tot_it){
   stats = data.frame(
     n = as.factor(c(sapply(seq(3,10),function(x){rep(x,3)}))),
@@ -110,6 +124,7 @@ get_stats <- function(res,tot_it){
   }
   return(stats)
 }
-stats = get_stats(res,10000)
+stats = get_stats(res,10000) # run statistics function
+# saving stats
 save(stats, file = "./project-1/optim-stats.Rdata")
 

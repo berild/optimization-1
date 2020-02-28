@@ -1,18 +1,25 @@
-library(ggplot2)
-library(parallel)
-source("./project-1/general_functions.R")
-source("./project-1/gd.R")
-source("./project-1/bfgs.R")
-source("./project-1/f-r.R")
+# This script is used to visualize the solution using the different methods
+# To run the simulation test look at run_stats.R
+# At the bottom of the page the data from the simulation is loaded and plotted
 
+library(ggplot2) # required for the plots
+# we have implemented our trails simulation in parallel since
+# it would take to long if not.
+library(parallel) # required for parallel computations
+source("./general_functions.R") # functions for all methods
+source("./gd.R") # gradient descent functions
+source("./bfgs.R") # bfgs functions
+source("./f-r.R") # fletcher reeves functions
+
+# intialize a arm
 init_arm <- function(len,angle){
   arm_polar = data.frame(len = len, angle = angle)
   arm_cart = point_arm(arm_polar)
   return(list(polar = arm_polar,cart = arm_cart))
 }
 
-
-
+# forward kinematic problem 
+# find point from segment and angle
 point_arm <- function(arm){
   x = y = rep(0,nrow(arm)+1)
   for (i in seq(nrow(arm))){
@@ -22,6 +29,7 @@ point_arm <- function(arm){
   return(data.frame(x = x, y = y))
 }
 
+# find inner radius if configuration space, is zero if no inner restrictions
 find_inner_radius <-function(len){
   if (max(len) > sum(len[-which.max(len)])){
     return(max(len) - sum(len[-which.max(len)]))
@@ -30,6 +38,7 @@ find_inner_radius <-function(len){
   }
 }
 
+# to create a visually satisfying end-effector
 create_arm_tip <- function(arm_cart,arm_polar){
   tot_angle = sum(arm_polar$angle)
   tot_len = sum(arm_polar$len)
@@ -45,6 +54,7 @@ create_arm_tip <- function(arm_cart,arm_polar){
   return(res)
 }
 
+# function plotting the whole arm for one method
 plot_arm <- function(arm,point){
   require(ggplot2)
   max_radius = sum(arm$len)
@@ -63,7 +73,6 @@ plot_arm <- function(arm,point){
     geom_ribbon(data = circ$fill_up, aes(x=x,ymin=ymin,ymax=ymax),alpha = 0.2) +
     geom_ribbon(data = circ$fill_low, aes(x=x,ymin=ymin,ymax=ymax),alpha = 0.2) + 
     geom_path(data = arm_point, aes(x=x,y=y),color = "firebrick",size = 1) + 
-    #geom_point(data = arm_point[nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 5,shape = 15) + 
     geom_path(data = arm_tip, aes(x=x1,y=y1), color = "firebrick",size = 1) + 
     geom_path(data = arm_tip, aes(x=x2,y=y2), color = "firebrick",size = 1) + 
     geom_point(data= arm_point[-nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 6,shape = 16) +
@@ -75,6 +84,7 @@ plot_arm <- function(arm,point){
   return(arm_fig)
 }
 
+# function plotting the whole arm for all methods
 plot_arm_joint <- function(arm1,arm2,arm3,point){
   require(ggplot2)
   max_radius = sum(arm1$len)
@@ -105,7 +115,6 @@ plot_arm_joint <- function(arm1,arm2,arm3,point){
     geom_path(data = arm_point1, aes(x=x,y=y,color = "GD"),size = 1) + 
     geom_path(data = arm_point2, aes(x=x,y=y,color = "F-R"),size = 1) + 
     geom_path(data = arm_point3, aes(x=x,y=y,color = "BFGS"),size = 1) + 
-    #geom_point(data = arm_point[nrow(arm_point),], aes(x=x,y=y),color = "firebrick",size = 5,shape = 15) + 
     geom_path(data = arm_tip1, aes(x=x1,y=y1,color = "GD"),size = 1) + 
     geom_path(data = arm_tip2, aes(x=x1,y=y1,color = "F-R"),size = 1) + 
     geom_path(data = arm_tip3, aes(x=x1,y=y1,color = "BFGS"),size = 1) + 
@@ -125,6 +134,7 @@ plot_arm_joint <- function(arm1,arm2,arm3,point){
   return(arm_fig)
 }
 
+# creating the configuration space in figures
 circleFun <- function(center=c(0,0), inner_radius = 0, radius=1, npoints=200, start=0, end=2){
   tt1 <- seq(start*pi, end/2*pi, length.out=npoints)
   tt2 <- seq(end/2*pi, end*pi, length.out=npoints)
@@ -157,59 +167,99 @@ circleFun <- function(center=c(0,0), inner_radius = 0, radius=1, npoints=200, st
   return(list(out_up = out_up, out_low = out_low, in_up = in_up, in_low = in_low, fill_up=fill_up,fill_low=fill_low))
 }
 
+
+# Visualization test 1
 point = c(-7,0)
+# Fletcher-Reeves
 res1 = fletcher_reeves(arm=data.frame(len = c(4,1,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point=point)
 plot_arm(res1$arm,point = point)
+# gradient descent
 res2 = gradient_descent(arm=data.frame(len = c(4,1,1), angle=c(pi/4,pi/6,pi/10)), tol = 0.001, point=point)
 plot_arm(res2$arm,point = point)
+# BFGS
 res3 = BFGS(arm=data.frame(len = c(4,1,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
 plot_arm(res3$arm,point = point)
+# all
 plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
 
+
+# Visualization test 2
 point = c(5,3)
+# Fletcher-Reeves
 res1 = fletcher_reeves(arm=data.frame(len = c(5,2,1), angle=c(pi/2,pi/6,pi/10)),tol = 0.001, point=point)
 plot_arm(res1$arm,point = point)
+# gradient descent
 res2 = gradient_descent(arm=data.frame(len = c(5,2,1), angle=c(pi/2,pi/6,pi/10)), tol = 0.001, point=point)
 plot_arm(res2$arm,point = point)
+# BFGS
 res3 = BFGS(arm=data.frame(len = c(5,2,1), angle=c(pi/2,pi/6,pi/10)),tol = 0.001, point = point)
 plot_arm(res3$arm,point = point)
-joint_arm <- plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
-joint_arm
-ggsave(filename = "joint_arm1.pdf", plot = joint_arm, device = NULL, path = "./figures/",
-       scale = 1, width = 6, height = 5, units = "in", dpi=5000)
+# all
+plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
 
 
+# Visualization test 3
 point = c(1,1)
+# Fletcher-Reeves
 res1 = fletcher_reeves(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
 plot_arm(res1$arm,point = point)
+# gradient descent
 res2 = gradient_descent(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
 plot_arm(res2$arm,point = point)
+# BFGS
 res3 = BFGS(arm=data.frame(len = c(1,4,1), angle=c(pi/4,pi/6,pi/10)),tol = 0.001, point = point)
-arm_fig <- plot_arm(res3$arm,point = point)
-arm_fig
-ggsave(filename = "arm1.pdf", plot = arm_fig, device = NULL, path = "./figures/",
-       scale = 1, width = 5, height = 5, units = "in", dpi=5000)
-
+plot_arm(res3$arm,point = point)
+# all
 plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
 
+
+
+# Visualization test 4
 point = c(3,2)
+# Fletcher-Reeves
 res1 = fletcher_reeves(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
 plot_arm(res1$arm,point = point)
+# gradient descent
 res2 = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
 plot_arm(res2$arm,point = point)
+# BFGS
 res3 = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/3)),tol = 0.001, point = point)
 plot_arm(res3$arm,point = point)
+# all
 plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
+
+
 
 point = c(0,0)
+# Fletcher-Reeves
 res1 = fletcher_reeves(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
 plot_arm(res1$arm,point = point)
+# gradient descent
 res2 = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
 plot_arm(res2$arm,point = point)
+# BFGS
 res3 = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
 plot_arm(res3$arm,point = point)
+# all
 plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
 
+
+
+point = c(10,10)
+# Fletcher-Reeves
+res1 = fletcher_reeves(arm=data.frame(len = c(3,2,1,1,2,2,2,2), angle=pi*c(3,2,1,1,2,2,2,2)),tol = 0.001, point = point)
+plot_arm(res1$arm,point = point)
+# gradient descent
+res2 = gradient_descent(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(res2$arm,point = point)
+# BFGS
+res3 = BFGS(arm=data.frame(len = c(3,2,1,1), angle=c(pi/4,pi/6,pi/10,pi/15)),tol = 0.001, point = point)
+plot_arm(res3$arm,point = point)
+# all
+plot_arm_joint(res2$arm,res1$arm,res3$arm,point = point)
+
+
+# auto generate problems 
 generate_problem <- function(n){
   len = sample(seq(15),n,replace = T)
   angle = runif(n,min = 0, max = 2*pi)
@@ -221,7 +271,7 @@ generate_problem <- function(n){
   return(list(point = point, arm = data.frame(angle = angle, len = len)))
 }
 
-
+# classifying convergence of one problem
 test_conv <- function(grad_f, eval_f,tol_1 = 1e-3, tol_2 = 1e-3){
   if ((grad_f < tol_1) & (eval_f < tol_2)){
     return(1)
@@ -232,6 +282,9 @@ test_conv <- function(grad_f, eval_f,tol_1 = 1e-3, tol_2 = 1e-3){
   }
 }
 
+# a simple simulation run 
+# to run on server use the run_stats.R 
+# DO NOT RUN: if you do not have 1 hour atleast to wait.
 run <- function(){
   n_arms = c(3,5,7,9)
   n_iter = 1000
@@ -266,20 +319,11 @@ run <- function(){
   }
   return(list(res_bfgs = res_bfgs, res_gd = res_gd, res_fr = res_fr))
 }
-# for (i in seq(n_iter)){
-#   setTxtProgressBar(pb, k)
-#   prob = generate_problem(n)
-#   tmp_bfgs = BFGS(arm = prob$arm,tol = 0.001, point = prob$point)
-#   res_bfgs[k,] = c(tmp_bfgs$k,tmp_bfgs$runtime,test_conv(tmp_bfgs$grad,tmp_bfgs$f),n,tmp_bfgs$grad,tmp_bfgs$f)
-#   tmp_fr = fletcher_reeves(arm = prob$arm,tol = 0.001, point = prob$point)
-#   res_fr[k,] = c(tmp_fr$k,tmp_fr$runtime,test_conv(tmp_fr$grad,tmp_fr$f),n,tmp_fr$grad,tmp_fr$f)
-#   tmp_gd = gradient_descent(arm = prob$arm,tol = 0.001, point = prob$point)
-#   res_gd[k,] = c(tmp_gd$k,tmp_gd$runtime,test_conv(tmp_gd$grad,tmp_gd$f),n,tmp_gd$grad,tmp_gd$f)
-#   k = k + 1
-# }
 
 
 res = run()
+
+# generate a dataframe of statistics from a simulation
 get_stats <- function(res,tot_it){
   stats = data.frame(
     n = as.factor(c(sapply(seq(3,9,2),function(x){rep(x,3)}))),
@@ -312,13 +356,26 @@ get_stats <- function(res,tot_it){
   return(stats)
 }
 
+load(file = "./optim-stats-large.Rdata")
+stats # print statistics from simulation
+# create iteration plot in project paper
+it_plot <- ggplot(stats,aes(x = n)) + 
+  geom_ribbon(aes(ymin = log(it_q25), ymax = log(it_q75), group = method, fill=method, color = method),alpha = 0.2) + 
+  geom_line(aes(y = log(it_q50),group = method,color = method),size = 1) + 
+  theme_bw()+ 
+  labs(x = "# segments", y = "log iterations",fill="",color="")
+it_plot
 
-
-ggplot(stats,aes(x = n)) + 
-  geom_ribbon(aes(x = n, ymin = log(it_q25), ymax = log(it_q75), group = method,fill = method, color = method),alpha = 0.2) + 
-  geom_line(aes(x = n, y = log(it_q50),group = method, color = method),size = 1)
-
-
-ggplot(stats,aes(x = n)) + 
+# create runtime plot in project paper
+run_plot <- ggplot(stats,aes(x = n)) + 
   geom_ribbon(aes(x = n, ymin = log(run_q25), ymax = log(run_q75), group = method,fill = method, color = method),alpha = 0.2) + 
-  geom_line(aes(x = n, y = log(run_q50),group = method, color = method),size = 1)
+  geom_line(aes(x = n, y = log(run_q50),group = method, color = method),size = 1) +
+  labs(x = "# segments", y = "log runtime", color = "", fill="") + 
+  theme_bw()
+run_plot
+
+
+library(ggpubr) #required for join plot of iteration and runtime
+ptot <- ggarrange(it_plot, run_plot, ncol=2, nrow=1, common.legend = TRUE, legend="bottom")
+ptot
+

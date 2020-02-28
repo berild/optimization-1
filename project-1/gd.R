@@ -5,6 +5,7 @@ gradient_descent <- function(arm,tol,point,a_k=1,c_1=1e-4,rho=0.5){
   k = 1
   while (norm_grad_f>tol){
     p_k = -grad_f/norm_grad_f
+    # backtracking line search
     a_k = backtracking_line_search(arm,point,grad_f,p_k,a_k=a_k,c_1=c_1,rho=rho)
     arm$angle = arm$angle + a_k*p_k
     grad_f = calc_grad(arm$angle,arm$len,point)

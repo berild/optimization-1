@@ -6,6 +6,7 @@ fletcher_reeves <- function(arm,tol,point){
   p_k = -grad_f
   k = 1
   while (mag(grad_f) > tol){
+    # line search, strong wolfe conditions
     a_k = wolfe_line_search(arm,point,p_k,c_2 = 0.45)
     if (a_k == 322){
       break

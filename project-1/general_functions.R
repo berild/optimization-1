@@ -1,8 +1,12 @@
+# General functions for inverse kinematic problem
+# these are sourced in the main script
+
+# maginute of a vector
 mag <- function(x){
   sqrt(sum(x^2))  
 }
 
-
+# gradient function for f()
 calc_grad <- function(angle,len,point){
   x = rep(0,length(angle))
   y = rep(0,length(angle))
@@ -18,6 +22,7 @@ calc_grad <- function(angle,len,point){
 }
 
 
+# the function of f()
 f <- function(angle,len,point){
   arm_point = c(0,0)
   for (i in seq(length(angle))){
@@ -27,6 +32,7 @@ f <- function(angle,len,point){
 }
 
 
+# strong wolfe conditions line search
 wolfe_line_search <- function(arm,point,p_k,c_1=1e-4,c_2=0.9,steps = 20){
   a_0 = a_i = 0
   a_m = 1
@@ -51,6 +57,7 @@ wolfe_line_search <- function(arm,point,p_k,c_1=1e-4,c_2=0.9,steps = 20){
   }
 }
 
+# zooming intervals in the wolfe line search
 zoom <- function(arm,point,p_k,phi_0,d_phi_0,a_l,a_h,c_1 = 1e-4,c_2=0.9){
   max_iterations = 100
   while (max_iterations>0){
@@ -72,9 +79,11 @@ zoom <- function(arm,point,p_k,phi_0,d_phi_0,a_l,a_h,c_1 = 1e-4,c_2=0.9){
     }
     max_iterations = max_iterations - 1
   }
+  # if interval becomes 0 we return errors
   return(322)
 }
 
+# phi deriv function in wolfe line search
 phi_deriv <- function(arm,point,p_k,a_k){
   return(as.numeric(calc_grad(arm$angle + a_k*p_k, arm$len, point)%*%p_k))
 }
